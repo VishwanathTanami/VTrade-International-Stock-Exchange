@@ -1,0 +1,875 @@
+<!doctype>
+<html>
+	<head>
+	<!-- <script src="https://code.highcharts.com/highcharts.js"></script> -->
+
+	<script src="https://code.highcharts.com/stock/highstock.js"></script>
+
+	
+
+		<style>		
+		
+			.bigDivClass{
+				height: 300px;
+				background-color: rgb(232,232,232);
+				border-radius: 7px;
+				margin-top: 40px;
+			}
+			
+			body {
+				background-color: rgb(96,96,169);
+				font-family: sans-serif;
+			}	
+			
+			.buttonClass1 {
+				background-color: rgb(248,248,248);
+				width: 120px;
+				height: 30px;
+				border-radius: 5px;
+				border: 0px solid black;
+				margin-left: 372px;
+				margin-top: 40px;				
+			}
+			
+			.buttonClass2 {
+				background-color: rgb(248,248,248);
+				width: 120px;
+				height: 30px;
+				border-radius: 5px;
+				border: 0px solid black;
+				margin-left: 60px;
+				margin-top: 40px;
+			}
+			
+			.biggerDiv
+			{
+				height: 700px;
+				width: 1000px;
+				margin-left: 250px;
+			}
+			
+			.hrLine {
+				margin-top: 15px;
+				background-color: rgb(232,232,232);
+			}
+			
+			ul {
+			  list-style-type: none;
+			  margin: 0;
+			  padding: 0;
+			  overflow: hidden;
+			  background-color: rgb(241,241,241);
+			}
+
+		li {
+			float: left;
+		   }
+		   
+		   li a {
+				  display: block;
+				  color: black;
+				  text-align: center;
+				  padding: 16px;
+				  text-decoration: none;
+				}		   
+li a:hover {
+  background-color: rgb(232,230,230);
+}
+
+li a:active {
+  background-color: rgb(232,230,230);
+}
+
+	
+
+.smallImage {
+
+	height: 12px;
+	width: 12px;
+	background-color: rgb(220,220,220);
+	margin-left: 5px;
+	   
+}
+
+
+	.midImage {
+								height: 100px;
+								width: 100px;
+								margin-top: 10px;
+								margin-left: 10px;
+								display: inline-block;
+				
+				}
+				
+				
+						.midText {
+								height: 100px;
+								width: 800px;
+								margin-top: 10px;
+								display: inline-block;
+								float: right;
+								margin-right: 60px;
+		
+		}
+		
+	.pClass {
+				
+					font-weight: bold;
+				}
+
+
+	#clearId:hover {
+	
+		background-color: rgb(169,169,169);
+	}
+
+		#searchId:hover {	
+		background-color: rgb(169,169,169);
+	}
+	
+				
+		</style>
+			
+	</head>
+	
+	<body onload = "initializer()">
+		<div class = "biggerDiv">
+			<div class = "bigDivClass">
+				<div style = "margin-left: 390px; padding-top: 30px; padding-bottom: 20px;">
+
+				  <h1 id = "stok">VTrade- International Stock Exchange</h1>
+				</div>
+				
+				<div>	
+					<form method = "GET">
+						<div>
+							<span style= "margin-left: 305px;">Enter Stock Ticker Symbol <font color = "red">*</font></span>				
+							<input id = "inputStockerIdField" type = "text" style= "margin-left: 50px; border-radius: 3px;  border: 0px solid black; height: 25px;" required/>
+						</div>
+						<div>
+								<input type = "submit" id = "searchId" onclick ="searchButtonCallback()" class ="buttonClass1" value = "Search"/>
+								<button id = "clearId" onclick= "clearEverything()" class = "buttonClass2">Clear</button> 		
+						</div>
+					</form>			
+				</div>		
+			</div>
+			
+			<hr class = "hrLine">
+		
+			<!-- Dynamic part -->
+			<ul id = "listId" style = "margin-top: 13px; display: none;">
+				<li id = "companyOutLookLi"><a href = "#" onclick = "oncompanyOutLook()" id ="companyOutLook">Company Outlook</a></li>
+				<li id = "stockSummaryLi"><a href = "#" onclick = "onstockSummary()" id = "stockSummary">Stock Summary</a></li>
+				<li id = "chartsLi"><a href = "#" onclick = "onCharts()" id = "charts">Charts</a></li>
+				<li id = "latestNewsLi"><a href = "#" onclick = "onNewsAPICall()"  id = "latestNews">Latest News</a></li>
+			</ul>	
+				
+				
+			<div id = "displayTableDiv" style = "margin-top: 30px;"></div>
+			
+		</div>
+
+	</body>
+		<script>
+		
+
+	
+		var symbol =  '';
+		var flagged_outlook = 0;
+		var flagged_stock = 0;
+		var flagged_chart = 0;
+		var flagged_news = 0;
+		function initializer ()
+		{		
+			document.getElementById('listId').style.display = 'none';
+		}
+		
+		function oncompanyOutLook()
+		{
+		event.preventDefault();
+
+		if (flagged_outlook == 1)
+		return;
+		
+		flagged_outlook=1;
+		flagged_stock = 0;
+		flagged_chart = 0;
+		flagged_news = 0;
+		
+
+		document.getElementById('companyOutLookLi').style.backgroundColor = 'rgb(204,204,204)';
+		document.getElementById('stockSummaryLi').style.backgroundColor = 'rgb(241,241,241)';
+		document.getElementById('chartsLi').style.backgroundColor = 'rgb(241,241,241)';
+		document.getElementById('latestNewsLi').style.backgroundColor = 'rgb(241,241,241)';
+		
+		
+		
+	
+		var req = new XMLHttpRequest();
+			req.onreadystatechange = function()
+			{
+          if(this.readyState == 4 && this.status == 200) {
+			
+				
+			json_data = JSON.parse(this.responseText);			
+			
+			var json_properly_converted =  {'Company Name': json_data.name, 'Stock Ticker Symbol': json_data.ticker,
+					'Stock Exchange Symbol': json_data.exchangeCode, 'Company Start Date': json_data.startDate, 
+					'Description': json_data.description
+			};
+			
+			createAndDisplayTableForCompanyOutlook (json_properly_converted);
+			
+          } else {
+			//	console.log('some error while sending request from js to backend');
+          }
+        }	
+		req.open('GET', '/data/'+symbol, true);
+		req.send(null);
+		}
+		
+		function formatDate(date) {
+    var d = new Date(date),
+        month = '' + (d.getMonth() + 1),
+        day = '' + d.getDate(),
+        year = d.getFullYear();
+
+    if (month.length < 2) 
+        month = '0' + month;
+    if (day.length < 2) 
+        day = '0' + day;
+
+    return [year, month, day].join('-');
+}
+
+
+	function formatDate2(date) {
+    var d = new Date(date),
+        month = '' + (d.getMonth() + 1),
+        day = '' + d.getDate(),
+        year = d.getFullYear();
+
+    if (month.length < 2) 
+        month = '0' + month;
+    if (day.length < 2) 
+        day = '0' + day;
+
+    return [month, day, year].join('/');
+}
+
+function chartDate (date)
+{
+var d = new Date(date),
+        month = '' + (d.getMonth() + 1),
+        day = '' + d.getDate(),
+        year = d.getFullYear();
+
+    if (month.length < 2) 
+        month = '0' + month;
+    if (day.length < 2) 
+        day = '0' + day;
+	
+	month = parseInt(month);
+	year = parseInt (year);
+	day = parseInt (day);
+
+    return [month, day, year];
+
+
+}
+
+		
+		
+		function onstockSummary ()
+		{
+		event.preventDefault();
+		if (flagged_stock == 1)
+			return;
+		
+		flagged_outlook=0;
+		flagged_stock = 1;
+		flagged_chart = 0;
+		flagged_news = 0;
+
+			
+		document.getElementById('companyOutLookLi').style.backgroundColor = 'rgb(241,241,241)';
+		document.getElementById('stockSummaryLi').style.backgroundColor = 'rgb(204,204,204)';
+		document.getElementById('chartsLi').style.backgroundColor = 'rgb(241,241,241)';
+		document.getElementById('latestNewsLi').style.backgroundColor = 'rgb(241,241,241)';
+		
+
+			
+			var req = new XMLHttpRequest();
+			req.onreadystatechange = function()
+			{			
+			if(this.readyState == 4 && this.status == 200) {
+
+			json_data = JSON.parse(this.responseText);
+			actual_date = formatDate(json_data[0].timestamp);
+	
+			prevClose = json_data[0].prevClose.toFixed(2);
+			last  = json_data[0].last.toFixed(2);
+			var change  = last - prevClose;
+			 
+			var pchange = change/ json_data[0].prevClose * 100;
+			
+			change = parseFloat(change).toFixed(2);
+			pchange = parseFloat(pchange).toFixed(2);
+			
+			
+			var json_properly_converted =  {'Stock Ticker Symbol': json_data[0].ticker, 'Trading Day': actual_date,
+					'Previous Closing Price': prevClose, 'Opening Price': json_data[0].open.toFixed(2), 
+					'High Price': json_data[0].high.toFixed(2), 'Low Price': json_data[0].low.toFixed(2), 'Last Price':last,
+					'Change': change, 'Percent Change': pchange, 'Number of Shares Traded': json_data[0].volume
+					};
+							
+			tableForStockSummary (json_properly_converted);
+			
+          } else {
+			
+          }
+        }		
+		req.open('GET', '/stock/'+symbol, true);
+		req.send(null);	
+		}
+		
+		function onCharts ()
+		{
+		event.preventDefault();
+		if (flagged_chart == 1)
+			return;
+		
+		flagged_outlook=0;
+		flagged_stock = 0;
+		flagged_chart = 1;
+		flagged_news = 0;
+
+
+			
+			document.getElementById('companyOutLookLi').style.backgroundColor = 'rgb(241,241,241)';
+			document.getElementById('stockSummaryLi').style.backgroundColor = 'rgb(241,241,241)';
+			document.getElementById('chartsLi').style.backgroundColor = 'rgb(204,204,204)';
+			document.getElementById('latestNewsLi').style.backgroundColor = 'rgb(241,241,241)';
+		
+
+			var req = new XMLHttpRequest();
+			req.onreadystatechange = function()
+			{			
+			if(this.readyState == 4 && this.status == 200) {
+
+			json_data = JSON.parse(this.responseText);
+			//console.log (typeof json_data);
+			dateVsVolume = []
+			dateVsStockPrice = []
+			for (var key in json_data)
+			{
+				arr1 = []
+				dater = json_data[key].date;
+				daterArr = chartDate (dater);
+				month = daterArr[0]-1;
+				day = daterArr[1];
+				year = daterArr[2];
+				dateActual = Date.UTC(year, month, day);
+				arr1.push(dateActual);
+				vol = json_data[key].volume / 1000;
+				//vol = json_data[key].volume
+				arr1.push(vol);
+				dateVsVolume.push (arr1);	
+				arr2 = []
+				arr2.push(dateActual);
+				var numRan = json_data[key].close;
+				numRan = numRan.toFixed(2);
+				numRan = parseFloat(numRan);
+				arr2.push(numRan);
+				dateVsStockPrice.push (arr2);						
+			}	
+			displayChart1 (dateVsVolume, dateVsStockPrice, symbol);	
+          } else {
+			
+          }
+        }	
+			req.open('GET', '/charts/'+symbol, true);
+			req.send(null);	
+		}
+		
+			
+		function displayChart1 (dateVsVolume, dateVsStockPrice, stockerSymbol)
+		{		
+		var today = new Date();
+		var dd = String(today.getDate()).padStart(2, '0');
+		var mm = String(today.getMonth() + 1).padStart(2, '0'); 
+		var yyyy = today.getFullYear();
+		
+		today = yyyy + '-' + mm + '-' + dd;
+		stockerSymbol = stockerSymbol.toUpperCase();
+		Highcharts.stockChart('displayTableDiv', {
+        title: {
+            text: 'Stock Price '+stockerSymbol+' '+today
+        },
+
+        subtitle: {
+		useHTML: true,
+            text: '<a target = "_blank" href = "https://api.tiingo.com/">Source: Tiingo</a>'
+        },
+		
+		        xAxis: {
+            gapGridLineWidth: 0,
+		
+        },
+		
+		yAxis: [{ // Primary yAxis
+        labels: {
+
+            style: {
+                color: Highcharts.getOptions().colors[1]
+            }
+        },
+        title: {
+            text: 'Stock Price',
+            style: {
+                color: Highcharts.getOptions().colors[1]
+            }
+        },
+		opposite: false,
+		min: 0
+    }, 
+	
+	{ 
+	
+	// Secondary yAxis
+        title: {
+            text: 'Volume',
+            style: {
+                color: Highcharts.getOptions().colors[1]
+            }
+        },
+        labels: {
+		
+            format: '{value}k',
+            style: {
+                color: Highcharts.getOptions().colors[1]
+            }
+        },
+        opposite: true,
+		min: 0,
+
+    }],
+
+		   
+
+        rangeSelector: {
+            buttons: [{
+                type: 'day',
+                count: 7,
+                text: '7d'
+            },{
+                type: 'day',
+                count: 15,
+                text: '15d'
+            }, {
+                type: 'month',
+                count: 1,
+                text: '1m'
+            }, {
+                type: 'month',
+                count: 3,
+                text: '3m'
+            }, {
+                type: 'month',
+                count: 6,
+                text: '6m'
+            }],
+            selected: 4,
+            inputEnabled: false
+        },
+
+        series: [{
+            name: stockerSymbol,
+            type: 'area',
+            data: dateVsStockPrice,
+            //gapSize: 5,
+            tooltip: {
+                valueDecimals: 2
+            },
+            fillColor: {
+                linearGradient: {
+                    x1: 0,
+                    y1: 0,
+                    x2: 0,
+                    y2: 1
+                },
+                stops: [
+                    [0, Highcharts.getOptions().colors[0]],
+                    [1, Highcharts.color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
+                ]
+            },
+            threshold: null
+        },
+		{
+        name: stockerSymbol + ' Volume',
+        type: 'column',
+        yAxis: 1,
+        data: dateVsVolume,
+		pointWidth: 3,
+        tooltip: {
+		enabled: true,
+		formatter: function ()
+		{
+		
+			return this.y * 1000;
+		}
+        }
+    }
+		]
+    }); 
+		
+		}
+		
+		
+		
+		function onNewsAPICall ()
+		{
+		event.preventDefault();
+		if (flagged_news == 1)
+			return;
+		
+		flagged_outlook=0;
+		flagged_stock = 0;
+		flagged_chart = 0;
+		flagged_news = 1;
+
+		
+		
+		
+			document.getElementById('companyOutLookLi').style.backgroundColor = 'rgb(241,241,241)';
+			document.getElementById('stockSummaryLi').style.backgroundColor = 'rgb(241,241,241)';
+			document.getElementById('chartsLi').style.backgroundColor = 'rgb(241,241,241)';
+			document.getElementById('latestNewsLi').style.backgroundColor = 'rgb(204,204,204)';
+		
+			
+		
+			var req = new XMLHttpRequest();
+			var newsObject = []
+			var title = 'title'; 
+			var url = 'url';
+			var urlToImage = 'urlToImage';
+			var publishedAt = 'publishedAt';
+			req.onreadystatechange = function()	
+			{			
+				if(this.readyState == 4 && this.status == 200) {
+	
+				json_data = JSON.parse(this.responseText);
+
+				for (var kk in json_data.articles)
+				{
+	
+	
+					
+					if (json_data.articles[kk].hasOwnProperty(title) && json_data.articles[kk].title != null && json_data.articles[kk].title.length !=0 
+					&& json_data.articles[kk].hasOwnProperty(url) && json_data.articles[kk].url != null && json_data.articles[kk].url.length !=0 
+					&& json_data.articles[kk].hasOwnProperty(urlToImage) && json_data.articles[kk].urlToImage !=null && json_data.articles[kk].urlToImage.length !=0 
+					&& json_data.articles[kk].hasOwnProperty(publishedAt) && json_data.articles[kk].publishedAt != null && json_data.articles[kk].publishedAt.length !=0)						
+						newsObject.push (json_data.articles[kk]);							
+					
+				if (newsObject.length == 5)
+					break;
+				}
+				
+				tableForNewsAPI(newsObject);
+				
+			  } else {
+				
+			  }
+			}	
+			req.open('GET', '/news/'+symbol, true);
+			req.send(null);	
+		}
+		
+		
+		function searchButtonCallback() {
+		
+
+			
+		var json_data = {};
+		
+		flagged_outlook = 1;
+		flagged_stock = 0;
+		flagged_chart = 0;
+		flagged_news = 0;
+		
+		
+		symbol = document.getElementById('inputStockerIdField').value;
+		
+		if (symbol.length ==0)
+		{
+			
+			return;
+		}
+		event.preventDefault();
+		document.getElementById('companyOutLookLi').style.backgroundColor = 'rgb(204,204,204)';
+		document.getElementById('stockSummaryLi').style.backgroundColor = 'rgb(241,241,241)';
+		document.getElementById('chartsLi').style.backgroundColor = 'rgb(241,241,241)';
+		document.getElementById('latestNewsLi').style.backgroundColor = 'rgb(241,241,241)';
+		
+		
+		var req = new XMLHttpRequest();
+		
+		req.onreadystatechange = function()
+        {
+          if(this.readyState == 4 && this.status == 200) {
+			
+			document.getElementById('listId').style.display = 'block';
+		
+			json_data = JSON.parse(this.responseText);			
+
+			if (json_data.hasOwnProperty('detail') && json_data.detail =='Not found.')
+			{
+				var div1 = document.getElementById('displayTableDiv');
+				document.getElementById('listId').style.display = 'none';
+				div1.style.fontWeight = "bold";
+				div1.style.textAlign = "center";
+				div1.innerHTML = 'Error: No record has been found, please enter a valid symbol.';
+				return;
+			}
+			
+
+			
+			var json_properly_converted =  {'Company Name': json_data.name, 'Stock Ticker Symbol': json_data.ticker,
+					'Stock Exchange Symbol': json_data.exchangeCode, 'Company Start Date': json_data.startDate, 
+					'Description': json_data.description
+			};
+			
+			createAndDisplayTableForCompanyOutlook (json_properly_converted);
+			
+          } else {
+		
+          }
+        }	
+		req.open('GET', '/data/'+symbol, true);
+		req.send(null);			
+		}
+		
+		function clearEverything() {				
+				
+				symbol = '';
+				document.getElementById('listId').style.display = 'none';
+				document.getElementById('inputStockerIdField').value = '';
+				document.getElementById('displayTableDiv').innerHTML = '';
+				event.preventDefault();			
+			}
+
+		function createAndDisplayTableForCompanyOutlook (json_properly_converted)
+		{			
+				
+			var div1 = document.getElementById('displayTableDiv');
+			var isEmpty = document.getElementById('displayTableDiv').innerHTML == "";
+			
+			if (!isEmpty)
+			{
+				
+				div1.innerHTML = "";
+			}	
+			var tbl = document.createElement("table");
+			tbl.style.border = '0px';
+			tbl.style.borderCollapse = 'collapse';
+			tbl.style.width = '1000px';
+			var totalRows = 5;
+			var cellsInRow = 2;	
+			
+			
+			var counter = 0;
+			
+			for (var key in json_properly_converted) {
+				
+				counter+=1;
+				var row = document.createElement("tr");
+				
+				if (counter < 5)
+					row.style.borderBottom= '1px solid black';
+				if (json_properly_converted.hasOwnProperty(key)) {
+
+					var cell_1 = document.createElement("td");	
+					cell_1.style.fontWeight = 'bold';
+					cell_1.style.width = '150px';
+					cell_1.style.backgroundColor = 'rgb(232,230,230)';
+					cell_1.style.borderRight = '0.5px solid black';
+					cell_1.style.paddingLeft = "5px";
+					
+					
+					var cellText_1 = document.createTextNode(key);
+					cell_1.appendChild(cellText_1);
+					row.appendChild(cell_1);
+					var cell_2 = document.createElement("td");
+					cell_2.style.textAlign = 'center';
+					cell_2.style.width = '300px';	
+					cell_2.style.backgroundColor = 'rgb(251,250,250)';
+					if (counter ==5)
+					{
+						cell_2.style.paddingLeft = "10px";
+						cell_2.style.textAlign = 'left';			
+					}
+					
+					var val = json_properly_converted[key];			
+					// cutting down val
+					if (val.length > 380)
+					{
+						val = val.substring(0,380);
+						val+="...";
+					}
+					
+					cellText_2 = document.createTextNode(val);
+					cell_2.appendChild(cellText_2);
+					row.appendChild(cell_2);
+				}
+				tbl.appendChild(row);
+			}		
+			div1.appendChild(tbl);
+		}	
+		
+		
+		function tableForNewsAPI(json_properly_converted)
+		{
+			var div1 = document.getElementById('displayTableDiv');
+			var isEmpty = document.getElementById('displayTableDiv').innerHTML == "";
+			
+			
+			if (!isEmpty)
+			{
+				
+				div1.innerHTML = "";
+			}			
+						
+			for (var index =0; index < json_properly_converted.length;index+=1)
+			{
+				each_object = json_properly_converted[index];
+			
+					var newDivElement = document.createElement("div");
+					newDivElement.style.height = '120px';
+					newDivElement.style.width = '1000px';
+					newDivElement.style.marginBottom = '10px';
+					newDivElement.style.backgroundColor = 'rgb(232,232,232)';
+					newDivElement.style.borderRadius = "4px";
+					newDivElement.style.textAlign = "left";
+					div1.appendChild(newDivElement);
+			
+					
+					var imageDiv = document.createElement("div");
+					imageDiv.classList.add("midImage");
+					var image = document.createElement("img");
+					image.src = each_object.urlToImage;
+					image.style.height = '100px';
+					image.style.width = '100px';
+					image.style.objectFit = 'cover';
+					imageDiv.appendChild(image);
+					newDivElement.appendChild(imageDiv);
+					
+					var textDiv = document.createElement("div");
+					textDiv.classList.add("midText");
+					var p1 = document.createElement("p");
+					p1.classList.add("pClass");
+					texter = each_object.title;
+				
+					//var p1_text = document.createTextNode(each_object.title);
+					var p1_text = document.createTextNode(texter);
+					p1.append (p1_text);
+					textDiv.append (p1);
+					var p2 = document.createElement("p");
+					p2.style.marginTop = "-15px";
+					var p2_static_text = document.createTextNode('Published Date:');
+					p2.append (p2_static_text);
+					var p2SpanElement = document.createElement("span");
+					p2SpanElement.style.marginLeft = "15px";
+					var published = formatDate2(each_object.publishedAt);
+					
+					var spanText = document.createTextNode(published);
+					p2SpanElement.appendChild (spanText);
+					p2.append(p2SpanElement); 
+					textDiv.append (p2);
+					
+					var p3 = document.createElement("p");
+					p3.style.marginTop = "-15px";
+					var anch = document.createElement("a");
+					anch.href = each_object.url;
+					anch.target= '_blank';
+					var anch_text = document.createTextNode('See Original Post');
+					anch.appendChild (anch_text);
+					p3.append (anch);
+				
+					textDiv.append (p3);
+					newDivElement.appendChild (textDiv);
+			}
+		}
+		
+		function tableForStockSummary(json_properly_converted) 
+		{
+			var div1 = document.getElementById('displayTableDiv');
+			var isEmpty = document.getElementById('displayTableDiv').innerHTML == "";
+			
+			
+			if (!isEmpty)
+			{
+				
+				div1.innerHTML = "";
+			}			
+			
+			var tbl = document.createElement("table");	
+			tbl.style.border = '0px';
+			tbl.style.borderCollapse = 'collapse';
+			tbl.style.width = '1000px';
+			var totalRows = 10;
+			var cellsInRow = 2;	
+			var counter = 0;
+			
+			for (var key in json_properly_converted) {
+				
+				counter+=1;
+				var row = document.createElement("tr");
+				
+				if (counter <10)
+					row.style.borderBottom= '1px solid black';
+				if (json_properly_converted.hasOwnProperty(key)) {
+				
+					var cell_1 = document.createElement("td");	
+					cell_1.style.fontWeight = 'bold';
+					cell_1.style.width = '150px';
+					cell_1.style.backgroundColor = 'rgb(232,230,230)';
+					cell_1.style.borderRight = '0.5px solid black';
+					cell_1.style.paddingLeft = "5px";
+					var cellText_1 = document.createTextNode(key);
+					cell_1.appendChild(cellText_1);
+					row.appendChild(cell_1);
+
+					var cell_2 = document.createElement("td");
+					cell_2.style.textAlign = 'center';
+					cell_2.style.width = '300px';	
+					cell_2.style.backgroundColor = 'rgb(251,250,250)';		
+					var val = json_properly_converted[key];			
+						
+					cellText_2 = document.createTextNode(val);
+					cell_2.appendChild(cellText_2);
+					if (key =='Change' || key == 'Percent Change')
+					{
+						if (val !=0)
+						{
+							var img = document.createElement('img'); 
+							img.classList.add ("smallImage")
+						}
+						if (val > 0)
+						{
+									img.src =  'https://csci571.com/hw/hw6/images/GreenArrowUp.jpg'; 
+							cell_2.appendChild(img);
+						}
+						else if (val < 0)
+						{
+							img.src = 'https://csci571.com/hw/hw6/images/RedArrowDown.jpg'							
+							cell_2.appendChild(img);
+						}	 
+					}
+					row.appendChild(cell_2);	
+				}
+				tbl.appendChild(row);
+			}		
+			div1.appendChild(tbl);			
+		}
+		</script>
+</html>
